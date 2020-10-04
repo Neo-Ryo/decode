@@ -9,6 +9,7 @@ import {
     DropdownToggle,
     DropdownMenu,
 } from 'reactstrap'
+import Indicators from './Indicators'
 import { useForm } from 'react-hook-form'
 
 export default function Decode() {
@@ -30,12 +31,22 @@ export default function Decode() {
         { level: 'EXTREME', boxes: 20 },
     ]
 
-    const onFocusHandler = (e) => {
+    const colors = ['lightgreen', 'orange', 'red']
+
+    const handleKeyDown = (e) => {
+        const numBoxes = levelDropdown.boxes
         const inputNum = e.target.name.split('-')
-        const newValue = parseFloat(inputNum[1]) + 1
-        const newFocus = `input-${newValue}`
-        console.log(newFocus)
-        document.getElementById(newFocus).focus()
+        const valueUp = parseFloat(inputNum[1]) + 1
+        const valueDown = parseFloat(inputNum[1]) - 1
+        if (valueUp <= numBoxes && e.keyCode !== 8) {
+            const newFocus = `input-${valueUp}`
+            document.getElementById(newFocus).focus()
+        }
+        if (e.keyCode === 8 && valueDown > 0) {
+            const newFocus = `input-${valueDown}`
+            document.getElementById(newFocus).focus()
+            console.log(e.keyCode)
+        }
     }
 
     const inputs = []
@@ -50,7 +61,7 @@ export default function Decode() {
                 id={`input-${i}`}
                 maxLength={1}
                 type="text"
-                onChange={(e) => onFocusHandler(e)}
+                onKeyUp={(e) => handleKeyDown(e)}
             />
         )
         indicators.push()
@@ -70,7 +81,9 @@ export default function Decode() {
             <h1>WiLL yOu Be abLe to DecOde</h1>
             <form onSubmit={(e) => handleDropdown(e)}>
                 <Dropdown isOpen={dropdownOpen} toggle={toggle}>
-                    <DropdownToggle caret> </DropdownToggle>
+                    <DropdownToggle caret>
+                        {levelDropdown.level}{' '}
+                    </DropdownToggle>
                     <DropdownMenu>
                         {levels.map((l) => (
                             <DropdownItem
@@ -84,6 +97,7 @@ export default function Decode() {
                 </Dropdown>
             </form>
             <form onSubmit={handleSubmit(onSubmit)}>
+                <Indicators colorIndicator="lightgreen" />
                 {inputs}
                 <Button color="info" type="submit">
                     submit
