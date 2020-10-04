@@ -1,0 +1,15 @@
+.inline {
+    display: grid;
+    grid-template-columns: repeat(2, 50%);
+    grid-template-areas: 'leftSide rightSide';
+}
+
+.right {
+    grid-area: rightSide;
+    margin: 10px;
+}
+
+.left {
+    grid-area: leftSide;
+    margin: 10px;
+}

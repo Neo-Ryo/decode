@@ -1,0 +1,25 @@
+GET http://localhost:8000/users
+
+###
+
+POST http://localhost:8000/users/register
+Content-Type: application/json
+
+{
+    "pseudo": "Marion",
+    "password": "toto"
+}
+
+###
+
+GET http://localhost:8000/users/9160d01e-581a-427b-b362-b65dba6c1dca
+
+###
+
+POST http://localhost:8000/users/login
+Content-Type: application/json
+
+{
+    "pseudo": "toto",
+    "password": "toto"
+}
