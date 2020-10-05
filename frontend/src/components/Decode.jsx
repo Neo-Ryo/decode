@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react'
-import ReactDOM from 'react-dom'
 import {
     Container,
     Button,
@@ -14,9 +13,14 @@ import { useForm } from 'react-hook-form'
 
 export default function Decode() {
     const { register, handleSubmit } = useForm()
-    const onSubmit = (data) => console.log(data)
+    const onSubmit = (data) => {
+        // console.log(data)
+        compareHashPwd(data)
+    }
     const [isLoading, setIsLoading] = useState(false)
     const [dropdownOpen, setDropdownOpen] = useState(false)
+    const [indicatorColor, setIndicatorColor] = useState([])
+    const [codeHashed, setCodeHashed] = useState([])
     const [levelDropdown, setLevelDropdown] = useState({
         level: 'Select a level',
         boxes: 0,
@@ -28,12 +32,13 @@ export default function Decode() {
         { level: 'easy', boxes: 5 },
         { level: 'medium', boxes: 7 },
         { level: 'hard', boxes: 9 },
-        { level: 'EXTREME', boxes: 20 },
+        { level: 'EXTREME', boxes: 13 },
     ]
 
-    const colors = ['lightgreen', 'orange', 'red']
+    const colors = ['none', 'lightgreen', 'orange', 'red']
+    const bcrypt = require('bcryptjs')
 
-    const handleKeyDown = (e) => {
+    const handleKeyUp = (e) => {
         const numBoxes = levelDropdown.boxes
         const inputNum = e.target.name.split('-')
         const valueUp = parseFloat(inputNum[1]) + 1
@@ -49,39 +54,108 @@ export default function Decode() {
         }
     }
 
+    const decode = []
+    const createPassword = (numChar) => {
+        const code = Math.random().toString(18).slice(-numChar)
+        const arrayCode = code.split('')
+        console.log('coucou', numChar)
+        for (let i = 0; i < numChar; i++) {
+            bcrypt.genSalt(10, function (err, salt) {
+                bcrypt.hash(arrayCode[i], salt, function (err, hash) {
+                    decode.push(hash)
+                })
+            })
+        }
+        setCodeHashed(decode)
+        console.log('decode :', decode)
+        console.log('code :', code)
+    }
+
+    const compareHashPwd = (data) => {
+        const answerObj = data
+        const answerArray = []
+        const inputStr = (i) => {
+            return `input-${i}`
+        }
+        for (let i = 0; i < levelDropdown.boxes; i++) {
+            bcrypt.compare(answerObj[inputStr(i + 1)], codeHashed[i], function (
+                err,
+                res
+            ) {
+                if (res === true) {
+                    answerArray.push(colors[1])
+                } else {
+                    const checkForMore = answerObj[inputStr(i + 1)]
+                    for (let j = 1; j < levelDropdown.boxes; j++) {
+                        bcrypt.compare(checkForMore, codeHashed[j], function (
+                            err,
+                            res
+                        ) {
+                            if (res === true) {
+                                answerArray.push(colors[2])
+                            } else if (
+                                j === levelDropdown.boxes - 1 &&
+                                res === false
+                            ) {
+                                answerArray.push(colors[3])
+                            }
+                        })
+                    }
+                }
+            })
+        }
+        console.log(answerArray)
+        setIndicatorColor(answerArray)
+    }
+
     const inputs = []
     const indicators = []
     const numbers = levelDropdown.boxes
     for (let i = 1; i <= numbers; i++) {
         inputs.push(
-            <input
-                style={{ width: 30, height: 30, margin: 5 }}
-                ref={register}
-                name={`input-${i}`}
-                id={`input-${i}`}
-                maxLength={1}
-                type="text"
-                onKeyUp={(e) => handleKeyDown(e)}
-            />
+            <div style={{ display: 'inline-block', marginTop: '5vh' }}>
+                <Indicators
+                    name={`input-${i}`}
+                    colorIndicator={indicatorColor[i]}
+                />
+                <input
+                    style={{
+                        width: 30,
+                        height: 30,
+                        margin: 5,
+                        textAlign: 'center',
+                    }}
+                    ref={register}
+                    name={`input-${i}`}
+                    id={`input-${i}`}
+                    maxLength={1}
+                    type="text"
+                    onKeyUp={(e) => handleKeyUp(e)}
+                    required
+                />
+            </div>
         )
         indicators.push()
     }
-    useEffect(() => {}, [levelDropdown])
+    useEffect(() => {
+        // compareHashPwd('code', decode)
+    }, [levelDropdown])
 
     const handleDropdown = (e) => {
         const newState = levels.filter((i) => i.level === e.target.value)
         setLevelDropdown(newState[0])
+        createPassword(newState[0].boxes)
     }
 
     if (isLoading) {
         return <Spinner color="primary" />
     }
     return (
-        <Container>
+        <Container style={{ marginTop: '15vh' }}>
             <h1>WiLL yOu Be abLe to DecOde</h1>
             <form onSubmit={(e) => handleDropdown(e)}>
                 <Dropdown isOpen={dropdownOpen} toggle={toggle}>
-                    <DropdownToggle caret>
+                    <DropdownToggle caret style={{ marginTop: '5vh' }}>
                         {levelDropdown.level}{' '}
                     </DropdownToggle>
                     <DropdownMenu>
@@ -97,7 +171,6 @@ export default function Decode() {
                 </Dropdown>
             </form>
             <form onSubmit={handleSubmit(onSubmit)}>
-                <Indicators colorIndicator="lightgreen" />
                 {inputs}
                 <Button color="info" type="submit">
                     submit
