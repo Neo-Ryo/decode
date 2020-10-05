@@ -14,7 +14,7 @@ import { useForm } from 'react-hook-form'
 export default function Decode() {
     const { register, handleSubmit } = useForm()
     const onSubmit = (data) => {
-        // console.log(data)
+        console.log('data submitted :', data)
         compareHashPwd(data)
     }
     const [isLoading, setIsLoading] = useState(false)
@@ -50,7 +50,6 @@ export default function Decode() {
         if (e.keyCode === 8 && valueDown > 0) {
             const newFocus = `input-${valueDown}`
             document.getElementById(newFocus).focus()
-            console.log(e.keyCode)
         }
     }
 
@@ -70,41 +69,40 @@ export default function Decode() {
         console.log('decode :', decode)
         console.log('code :', code)
     }
+    const answerArray = []
 
     const compareHashPwd = (data) => {
         const answerObj = data
-        const answerArray = []
-        const inputStr = (i) => {
-            return `input-${i}`
-        }
-        for (let i = 0; i < levelDropdown.boxes; i++) {
-            bcrypt.compare(answerObj[inputStr(i + 1)], codeHashed[i], function (
+        const answerKeys = Object.keys(answerObj)
+        for (let i = 0; i < answerKeys.length; i++) {
+            bcrypt.compare(answerObj[answerKeys[i]], codeHashed[i], function (
                 err,
                 res
             ) {
                 if (res === true) {
-                    answerArray.push(colors[1])
+                    return answerArray.push(colors[1])
                 } else {
-                    const checkForMore = answerObj[inputStr(i + 1)]
-                    for (let j = 1; j < levelDropdown.boxes; j++) {
+                    const checkForMore = answerObj[answerKeys[i]]
+                    console.log('checkForMore :', checkForMore)
+                    for (let j = 0; j < answerKeys.length; j++) {
                         bcrypt.compare(checkForMore, codeHashed[j], function (
                             err,
                             res
                         ) {
                             if (res === true) {
-                                answerArray.push(colors[2])
+                                return answerArray.push(colors[2])
                             } else if (
-                                j === levelDropdown.boxes - 1 &&
+                                j === levelDropdown.boxes - 2 &&
                                 res === false
                             ) {
-                                answerArray.push(colors[3])
+                                return answerArray.push(colors[3])
                             }
                         })
                     }
                 }
             })
         }
-        console.log(answerArray)
+        console.log('answerArray :', answerArray)
         setIndicatorColor(answerArray)
     }
 
@@ -116,7 +114,7 @@ export default function Decode() {
             <div style={{ display: 'inline-block', marginTop: '5vh' }}>
                 <Indicators
                     name={`input-${i}`}
-                    colorIndicator={indicatorColor[i]}
+                    colorIndicator={indicatorColor[i - 1]}
                 />
                 <input
                     style={{
@@ -139,7 +137,7 @@ export default function Decode() {
     }
     useEffect(() => {
         // compareHashPwd('code', decode)
-    }, [levelDropdown])
+    }, [levelDropdown, answerArray])
 
     const handleDropdown = (e) => {
         const newState = levels.filter((i) => i.level === e.target.value)
