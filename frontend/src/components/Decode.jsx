@@ -14,13 +14,16 @@ import { useForm } from 'react-hook-form'
 export default function Decode() {
     const { register, handleSubmit } = useForm()
     const onSubmit = (data) => {
-        console.log('data submitted :', data)
+        // console.log('data submitted :', data)
         compareHashPwd(data)
     }
     const [isLoading, setIsLoading] = useState(false)
+    const [buttonLoader, setButtonLoader] = useState(false)
     const [dropdownOpen, setDropdownOpen] = useState(false)
     const [indicatorColor, setIndicatorColor] = useState([])
     const [codeHashed, setCodeHashed] = useState([])
+    const [rawCode, setRawCode] = useState('')
+    const [openVault, setOpenVault] = useState(false)
     const [levelDropdown, setLevelDropdown] = useState({
         level: 'Select a level',
         boxes: 0,
@@ -36,74 +39,84 @@ export default function Decode() {
     ]
 
     const colors = ['none', 'lightgreen', 'orange', 'red']
-    const bcrypt = require('bcryptjs')
 
     const handleKeyUp = (e) => {
         const numBoxes = levelDropdown.boxes
         const inputNum = e.target.name.split('-')
         const valueUp = parseFloat(inputNum[1]) + 1
         const valueDown = parseFloat(inputNum[1]) - 1
-        if (valueUp <= numBoxes && e.keyCode !== 8) {
+        if (
+            valueUp <= numBoxes &&
+            e.keyCode !== 8 &&
+            e.keyCode !== 13 &&
+            e.keyCode !== 16
+        ) {
             const newFocus = `input-${valueUp}`
             document.getElementById(newFocus).focus()
         }
-        if (e.keyCode === 8 && valueDown > 0) {
+        if ((e.keyCode === 8 || e.keyCode === 37) && valueDown > 0) {
             const newFocus = `input-${valueDown}`
             document.getElementById(newFocus).focus()
         }
     }
 
-    const decode = []
+    const handleOnclick = async () => {
+        try {
+            setOpenVault(false)
+            setIndicatorColor([])
+            setCodeHashed([])
+            setRawCode('')
+        } catch (error) {
+        } finally {
+            createPassword(5)
+        }
+    }
+
     const createPassword = (numChar) => {
+        setOpenVault(false)
         const code = Math.random().toString(18).slice(-numChar)
         const arrayCode = code.split('')
-        console.log('coucou', numChar)
+        const answerArray = []
+        // console.log('coucou', numChar)
         for (let i = 0; i < numChar; i++) {
-            bcrypt.genSalt(10, function (err, salt) {
-                bcrypt.hash(arrayCode[i], salt, function (err, hash) {
-                    decode.push(hash)
-                })
-            })
+            answerArray.push(colors[0])
         }
-        setCodeHashed(decode)
-        console.log('decode :', decode)
-        console.log('code :', code)
+        setCodeHashed(arrayCode)
+        setRawCode(code)
+        console.log('raw code :', code)
     }
-    const answerArray = []
 
-    const compareHashPwd = (data) => {
-        const answerObj = data
-        const answerKeys = Object.keys(answerObj)
-        for (let i = 0; i < answerKeys.length; i++) {
-            bcrypt.compare(answerObj[answerKeys[i]], codeHashed[i], function (
-                err,
-                res
-            ) {
-                if (res === true) {
-                    return answerArray.push(colors[1])
+    const compareHashPwd = async (data) => {
+        try {
+            const answerObj = await data
+            setButtonLoader(true)
+            const answerArray = []
+            const answerKeys = Object.keys(answerObj)
+            const resultTrue = answerKeys.length
+            let result = 0
+            // console.log('code hashed :', codeHashed)
+            // console.log(rawCode.includes(answerObj[answerKeys[1]]))
+            for (let i = 0; i < answerKeys.length; i++) {
+                // console.log(answerObj[answerKeys[i]])
+                if (answerObj[answerKeys[i]] === codeHashed[i]) {
+                    answerArray.push(colors[1])
+                    result += 1
+                } else if (rawCode.includes(answerObj[answerKeys[i]])) {
+                    answerArray.push(colors[2])
                 } else {
-                    const checkForMore = answerObj[answerKeys[i]]
-                    console.log('checkForMore :', checkForMore)
-                    for (let j = 0; j < answerKeys.length; j++) {
-                        bcrypt.compare(checkForMore, codeHashed[j], function (
-                            err,
-                            res
-                        ) {
-                            if (res === true) {
-                                return answerArray.push(colors[2])
-                            } else if (
-                                j === levelDropdown.boxes - 2 &&
-                                res === false
-                            ) {
-                                return answerArray.push(colors[3])
-                            }
-                        })
-                    }
+                    answerArray.push(colors[3])
                 }
-            })
+            }
+            // console.log('answerArray :', answerArray)
+            setIndicatorColor(answerArray)
+            if (result === resultTrue) {
+                setOpenVault(true)
+            }
+        } catch (error) {
+            throw Error(error)
+        } finally {
+            setButtonLoader(false)
         }
-        console.log('answerArray :', answerArray)
-        setIndicatorColor(answerArray)
     }
 
     const inputs = []
@@ -135,18 +148,33 @@ export default function Decode() {
         )
         indicators.push()
     }
-    useEffect(() => {
-        // compareHashPwd('code', decode)
-    }, [levelDropdown, answerArray])
+    useEffect(() => {}, [levelDropdown, indicatorColor])
 
     const handleDropdown = (e) => {
         const newState = levels.filter((i) => i.level === e.target.value)
         setLevelDropdown(newState[0])
         createPassword(newState[0].boxes)
+        setIndicatorColor([])
     }
 
     if (isLoading) {
         return <Spinner color="primary" />
+    }
+
+    if (openVault) {
+        return (
+            <div>
+                <Button color="danger" block onClick={() => handleOnclick()}>
+                    {' '}
+                    Back
+                </Button>
+                <p>Congrats!!</p>
+                <img
+                    src="https://media.giphy.com/media/LtQLmuR22JeFy/giphy.gif"
+                    alt="openning vault"
+                />
+            </div>
+        )
     }
     return (
         <Container style={{ marginTop: '15vh' }}>
@@ -171,7 +199,7 @@ export default function Decode() {
             <form onSubmit={handleSubmit(onSubmit)}>
                 {inputs}
                 <Button color="info" type="submit">
-                    submit
+                    {buttonLoader ? <Spinner /> : 'submit'}
                 </Button>
             </form>
         </Container>
