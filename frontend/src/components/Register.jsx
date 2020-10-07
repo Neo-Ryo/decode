@@ -35,7 +35,8 @@ export default function Register() {
         try {
             setIsLoading(true)
             const res = await axios.post(`${url}/users/register`, data)
-            console.log(res, profile)
+            const { uuid } = res.data
+            localStorage.setItem('uuid', uuid)
             toast.success('wElcoMe nEw dEcoDER')
             history.push('/decode')
             setIsLoading(false)

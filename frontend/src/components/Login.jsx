@@ -21,10 +21,12 @@ export default function Login() {
         try {
             setIsLoading(true)
             const res = await axios.post(`${url}/users/login`, data)
-            if (res.data.uuid) {
+            const { uuid } = res.data
+            if (uuid) {
                 history.push('/decode')
-                setIsLoading(false)
+                localStorage.setItem('uuid', uuid)
                 toast.success('wElcOme BaCK dEcOder')
+                setIsLoading(false)
             } else throw new Error()
         } catch (error) {
             toast.error('Something went wrong, try again')

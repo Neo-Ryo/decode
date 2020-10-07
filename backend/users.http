@@ -6,13 +6,13 @@ POST http://localhost:8000/users/register
 Content-Type: application/json
 
 {
-    "pseudo": "Marion",
+    "pseudo": "Ryo",
     "password": "toto"
 }
 
 ###
 
-GET http://localhost:8000/users/9160d01e-581a-427b-b362-b65dba6c1dca
+GET http://localhost:8000/users/87edce17-4c0f-4722-b54b-3b55030307ae
 
 ###
 
@@ -23,3 +23,11 @@ Content-Type: application/json
     "pseudo": "toto",
     "password": "toto"
 }
+
+###
+
+PUT  http://localhost:8000/users/a7697a78-90ed-4eeb-bcb1-9b4e7d8cc4d3/trials
+
+###
+
+PUT  http://localhost:8000/users/a7697a78-90ed-4eeb-bcb1-9b4e7d8cc4d3/trials

@@ -8,8 +8,13 @@ import {
     DropdownToggle,
     DropdownMenu,
 } from 'reactstrap'
+import axios from 'axios'
+import UserCard from './UserCard'
+import ScoreCard from './ScoreCard'
 import Indicators from './Indicators'
 import { useForm } from 'react-hook-form'
+import url from '../urls'
+import ArrayOfTrials from './ArrayOfTrials'
 
 export default function Decode() {
     const { register, handleSubmit } = useForm()
@@ -18,12 +23,14 @@ export default function Decode() {
         compareHashPwd(data)
     }
     const [isLoading, setIsLoading] = useState(false)
+    const [user, setUser] = useState({})
     const [buttonLoader, setButtonLoader] = useState(false)
     const [dropdownOpen, setDropdownOpen] = useState(false)
     const [indicatorColor, setIndicatorColor] = useState([])
     const [codeHashed, setCodeHashed] = useState([])
     const [rawCode, setRawCode] = useState('')
     const [openVault, setOpenVault] = useState(false)
+    const [trials, setTrials] = useState([])
     const [levelDropdown, setLevelDropdown] = useState({
         level: 'Select a level',
         boxes: 0,
@@ -72,6 +79,16 @@ export default function Decode() {
         }
     }
 
+    const postTrial = () => {
+        const uuid = localStorage.getItem('uuid')
+        axios.put(`${url}/users/${uuid}/trials`)
+    }
+
+    const postSuccess = () => {
+        const uuid = localStorage.getItem('uuid')
+        axios.put(`${url}/users/${uuid}/success`)
+    }
+
     const createPassword = (numChar) => {
         setOpenVault(false)
         const code = Math.random().toString(18).slice(-numChar)
@@ -93,11 +110,13 @@ export default function Decode() {
             const answerArray = []
             const answerKeys = Object.keys(answerObj)
             const resultTrue = answerKeys.length
+            const trialString = []
             let result = 0
             // console.log('code hashed :', codeHashed)
             // console.log(rawCode.includes(answerObj[answerKeys[1]]))
             for (let i = 0; i < answerKeys.length; i++) {
                 // console.log(answerObj[answerKeys[i]])
+                trialString.push(answerObj[answerKeys[i]])
                 if (answerObj[answerKeys[i]] === codeHashed[i]) {
                     answerArray.push(colors[1])
                     result += 1
@@ -107,10 +126,16 @@ export default function Decode() {
                     answerArray.push(colors[3])
                 }
             }
-            // console.log('answerArray :', answerArray)
+            const string = trialString.join('')
+            console.log('string :', string)
             setIndicatorColor(answerArray)
+            setTrials([...trials, string])
             if (result === resultTrue) {
+                postSuccess()
+                setTrials([])
                 setOpenVault(true)
+            } else {
+                postTrial()
             }
         } catch (error) {
             throw Error(error)
@@ -148,13 +173,35 @@ export default function Decode() {
         )
         indicators.push()
     }
-    useEffect(() => {}, [levelDropdown, indicatorColor])
+
+    const getUser = async () => {
+        try {
+            setIsLoading(true)
+            const uuid = localStorage.getItem('uuid')
+            const res = await axios.get(`${url}/users/${uuid}`)
+            setUser(res.data)
+            setIsLoading(false)
+        } catch (error) {
+            throw new Error(error)
+        }
+    }
+
+    useEffect(() => {
+        getUser()
+    }, [levelDropdown, indicatorColor])
 
     const handleDropdown = (e) => {
         const newState = levels.filter((i) => i.level === e.target.value)
         setLevelDropdown(newState[0])
         createPassword(newState[0].boxes)
         setIndicatorColor([])
+    }
+
+    const renderScore = () => {
+        const { trials } = user
+        const { successing } = user
+        const actualScore = (successing / trials) * 100
+        return actualScore
     }
 
     if (isLoading) {
@@ -177,8 +224,10 @@ export default function Decode() {
         )
     }
     return (
-        <Container style={{ marginTop: '15vh' }}>
+        <Container style={{ marginTop: '3vh' }}>
             <h1>WiLL yOu Be abLe to DecOde</h1>
+            <UserCard pseudo={user.pseudo} />
+            <ScoreCard score={renderScore()} />
             <form onSubmit={(e) => handleDropdown(e)}>
                 <Dropdown isOpen={dropdownOpen} toggle={toggle}>
                     <DropdownToggle caret style={{ marginTop: '5vh' }}>
@@ -197,6 +246,7 @@ export default function Decode() {
                 </Dropdown>
             </form>
             <form onSubmit={handleSubmit(onSubmit)}>
+                <ArrayOfTrials array={trials} />
                 {inputs}
                 <Button color="info" type="submit">
                     {buttonLoader ? <Spinner /> : 'submit'}
